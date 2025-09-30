@@ -454,7 +454,7 @@ namespace SpineViewer.Models
                 t.Draw(this._spineObject);
                 t.Display();
                 var img = t.Texture.CopyToImage();
-                img.SaveToFile("aaaaaa.png");
+                //img.SaveToFile("aaaaaa.png");
                 //SFML.Graphics.RenderTexture tZ = new SFML.Graphics.RenderTexture(size.X/2, size.Y/2);
                 //var viewZ = new View(view);
                 ////viewZ.Zoom(2.0f);
@@ -485,12 +485,12 @@ namespace SpineViewer.Models
                         continue;
                     }
 
-                    t1.Clear(Color.Transparent);
+                    t1.Clear(SFML.Graphics.Color.Transparent);
                     var draw_slot = new DrawSlot(_spineObject, slot);
                     t1.Draw(draw_slot);
                     t1.Display();
                     var img1 = t1.Texture.CopyToImage();
-                    img1.SaveToFile(slot.Name + "bbbbbbb.png");
+                    //img1.SaveToFile(slot.Name + "bbbbbbb.png");
                     var pix1 = img1.GetPixel((uint)x / resize, (uint)y / resize);
                     if (pix1.A != 0)
                     {
