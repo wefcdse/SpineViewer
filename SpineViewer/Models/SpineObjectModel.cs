@@ -447,7 +447,7 @@ namespace SpineViewer.Models
         }
         public void TestHit(int x, int y, Vector2u size, SFML.Graphics.View view)
         {
-            //lock (_lock)
+            lock (_lock)
             {
                 SFML.Graphics.RenderTexture t = new SFML.Graphics.RenderTexture(size.X, size.Y);
                 t.SetView(view);
@@ -455,7 +455,6 @@ namespace SpineViewer.Models
                 t.Display();
                 var img = t.Texture.CopyToImage();
                 img.SaveToFile("aaaaaa.png");
-
                 //SFML.Graphics.RenderTexture tZ = new SFML.Graphics.RenderTexture(size.X/2, size.Y/2);
                 //var viewZ = new View(view);
                 ////viewZ.Zoom(2.0f);
@@ -474,16 +473,18 @@ namespace SpineViewer.Models
                 {
                     return;
                 }
+                uint resize = 8;
 
+                RenderTexture t1 = new RenderTexture(size.X / resize, size.Y / resize);
+                t1.SetView(view);
                 foreach (var slot in _spineObject.GetPrivateSkeleton().IterDrawOrder())
                 {
                     if (slot.A <= 0 || !slot.Bone.Active || slot.Disabled)
                     {
                         continue;
                     }
-                    uint resize = 8;
-                    SFML.Graphics.RenderTexture t1 = new RenderTexture(size.X / resize, size.Y / resize);
-                    t1.SetView(view);
+
+                    t1.Clear();
                     var draw_slot = new DrawSlot(_spineObject, slot);
                     t1.Draw(draw_slot);
                     t1.Display();
@@ -494,8 +495,12 @@ namespace SpineViewer.Models
                     {
                         Debug.Print(slot.Name);
                     }
+                    img1.Dispose();
 
                 }
+                t1.Dispose();
+                t.Dispose();
+                img.Dispose();
             }
         }
 
