@@ -476,7 +476,8 @@ namespace SpineViewer.Models
                 uint resize = 8;
 
                 RenderTexture t1 = new RenderTexture(size.X / resize, size.Y / resize);
-                t1.SetView(view);
+                View v1 = new View(view);
+                t1.SetView(v1);
                 foreach (var slot in _spineObject.GetPrivateSkeleton().IterDrawOrder())
                 {
                     if (slot.A <= 0 || !slot.Bone.Active || slot.Disabled)
@@ -484,12 +485,12 @@ namespace SpineViewer.Models
                         continue;
                     }
 
-                    t1.Clear();
+                    t1.Clear(Color.Transparent);
                     var draw_slot = new DrawSlot(_spineObject, slot);
                     t1.Draw(draw_slot);
                     t1.Display();
                     var img1 = t1.Texture.CopyToImage();
-                    //img1.SaveToFile(slot.Name + "bbbbbbb.png");
+                    img1.SaveToFile(slot.Name + "bbbbbbb.png");
                     var pix1 = img1.GetPixel((uint)x / resize, (uint)y / resize);
                     if (pix1.A != 0)
                     {
@@ -501,6 +502,7 @@ namespace SpineViewer.Models
                 t1.Dispose();
                 t.Dispose();
                 img.Dispose();
+                v1.Dispose();
             }
         }
 
