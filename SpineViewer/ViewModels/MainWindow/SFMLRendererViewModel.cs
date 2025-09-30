@@ -15,6 +15,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -324,6 +325,21 @@ namespace SpineViewer.ViewModels.MainWindow
                 }
             }
         }
+        private class GetSize :  SFML.Graphics.Drawable
+        {
+            public SFML.System.Vector2u Size;
+            public GetSize()
+            {
+                this.Size = new SFML.System.Vector2u(0, 0);
+            }
+
+        
+
+            public void Draw(SFML.Graphics.RenderTarget target, SFML.Graphics.RenderStates states)
+            {
+                this.Size = target.Size;
+            }
+        }
 
         public void CanvasMouseButtonPressed(object? s, SFML.Window.MouseButtonEventArgs e)
         {
@@ -361,6 +377,10 @@ namespace SpineViewer.ViewModels.MainWindow
 
                                 hit = true;
 
+                                var getSize = new GetSize();
+                                this._renderer.Draw(getSize);
+                                Debug.Print("window size: " + getSize.Size);
+                                sp.TestHit(e.X, e.Y, getSize.Size,_renderer.GetView());
                                 // 如果点到了没被选中的东西, 则清空原先选中的, 改为只选中这一次点的
                                 if (!sp.IsSelected)
                                 {

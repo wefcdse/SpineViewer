@@ -2,6 +2,7 @@
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
+using SFML.Graphics;
+using SFML.System;
 using Spine;
 using Spine.SpineWrappers;
 using SpineViewer.Extensions;
@@ -426,6 +429,74 @@ namespace SpineViewer.Models
         public Rect GetCurrentBounds()
         {
             lock (_lock) return _spineObject.GetCurrentBounds();
+        }
+        private class DrawSlot : SFML.Graphics.Drawable
+        {
+            private SpineObject SpineObj;
+            private ISlot Slot;
+            public DrawSlot(SpineObject spineObj, ISlot slot)
+            {
+                this.SpineObj = spineObj;
+                this.Slot = slot;
+            }
+
+            public void Draw(RenderTarget target, RenderStates states)
+            {
+                SpineObj.DrawSlot(Slot, target, states);
+            }
+        }
+        public void TestHit(int x, int y, Vector2u size, SFML.Graphics.View view)
+        {
+            //lock (_lock)
+            {
+                SFML.Graphics.RenderTexture t = new SFML.Graphics.RenderTexture(size.X, size.Y);
+                t.SetView(view);
+                t.Draw(this._spineObject);
+                t.Display();
+                var img = t.Texture.CopyToImage();
+                img.SaveToFile("aaaaaa.png");
+
+                //SFML.Graphics.RenderTexture tZ = new SFML.Graphics.RenderTexture(size.X/2, size.Y/2);
+                //var viewZ = new View(view);
+                ////viewZ.Zoom(2.0f);
+                //tZ.SetView(viewZ);
+                //tZ.Draw(this._spineObject);
+                //tZ.Display();
+                //var imgZ = tZ.Texture.CopyToImage();
+                //imgZ.SaveToFile("aaaaaz.png");
+
+                var pix = img.GetPixel((uint)x, (uint)y);
+                if (pix.A != 0)
+                {
+                    Debug.Print(this.Name);
+                }
+                else
+                {
+                    return;
+                }
+
+                foreach (var slot in _spineObject.GetPrivateSkeleton().IterDrawOrder())
+                {
+                    if (slot.A <= 0 || !slot.Bone.Active || slot.Disabled)
+                    {
+                        continue;
+                    }
+                    uint resize = 8;
+                    SFML.Graphics.RenderTexture t1 = new RenderTexture(size.X / resize, size.Y / resize);
+                    t1.SetView(view);
+                    var draw_slot = new DrawSlot(_spineObject, slot);
+                    t1.Draw(draw_slot);
+                    t1.Display();
+                    var img1 = t1.Texture.CopyToImage();
+                    //img1.SaveToFile(slot.Name + "bbbbbbb.png");
+                    var pix1 = img1.GetPixel((uint)x / resize, (uint)y / resize);
+                    if (pix1.A != 0)
+                    {
+                        Debug.Print(slot.Name);
+                    }
+
+                }
+            }
         }
 
         public SpineObjectConfigModel ObjectConfig
