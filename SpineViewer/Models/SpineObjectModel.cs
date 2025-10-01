@@ -445,12 +445,26 @@ namespace SpineViewer.Models
                 SpineObj.DrawSlot(Slot, target, states);
             }
         }
+        static RenderTexture tuse = null;
         public bool TestHit(int x, int y, Vector2u size, SFML.Graphics.View view)
         {
             lock (_lock)
             {
                 uint test_hit_down = 4;
-                SFML.Graphics.RenderTexture t = new SFML.Graphics.RenderTexture(size.X / test_hit_down, size.Y / test_hit_down);
+                Vector2u target_size = new Vector2u(size.X / test_hit_down, size.Y / test_hit_down);
+                if (tuse == null)
+                {
+                    tuse = new SFML.Graphics.RenderTexture(target_size.X,target_size.Y);
+                }
+                if (tuse.Size != target_size)
+                {
+                    var drop = tuse;
+                    tuse = new SFML.Graphics.RenderTexture(target_size.X, target_size.Y);
+                    drop.Dispose();
+                }
+                tuse.Clear(SFML.Graphics.Color.Transparent);
+
+                SFML.Graphics.RenderTexture t = tuse;
                 t.SetView(view);
                 t.Draw(this._spineObject);
                 t.Display();
@@ -469,10 +483,13 @@ namespace SpineViewer.Models
                 if (pix.A != 0)
                 {
                     Debug.Print(this.Name);
+                    //t.Dispose();
+                    img.Dispose();
+                    return true;
                 }
                 else
                 {
-                    t.Dispose();
+                    //t.Dispose();
                     img.Dispose();
                     return false;
                 }

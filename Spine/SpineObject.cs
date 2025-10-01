@@ -636,11 +636,6 @@ namespace Spine
         /// </summary>
         protected void DrawTexture(SFML.Graphics.RenderTarget target, SFML.Graphics.RenderStates states)
         {
-            if (RenderSize != target.Size)
-            {
-                Debug.Print("size: " + target.Size);
-                RenderSize = target.Size;
-            }
             _triangleVertices.Clear();
             states.Texture = null;
             states.Shader = UsePma ? SFMLShader.VertexAlphaPma : SFMLShader.VertexAlpha;
