@@ -449,7 +449,7 @@ namespace SpineViewer.Models
         {
             lock (_lock)
             {
-                uint test_hit_down = 1;
+                uint test_hit_down = 4;
                 SFML.Graphics.RenderTexture t = new SFML.Graphics.RenderTexture(size.X / test_hit_down, size.Y / test_hit_down);
                 t.SetView(view);
                 t.Draw(this._spineObject);

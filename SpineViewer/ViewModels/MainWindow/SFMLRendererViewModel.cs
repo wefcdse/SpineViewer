@@ -370,7 +370,7 @@ namespace SpineViewer.ViewModels.MainWindow
                         {
                             // 没按 Ctrl 的情况下, 如果命中了已选中对象, 则就算普通命中
                             bool hitany = false;
-                            foreach (var sp in _models.Reverse())
+                            foreach (var sp in _models)
                             {
                                 if (!sp.IsShown) continue;
                                 if (!sp.GetCurrentBounds().Contains(src)) continue;
@@ -387,7 +387,10 @@ namespace SpineViewer.ViewModels.MainWindow
                                     RequestSelectionChanging?.Invoke(this, new(NotifyCollectionChangedAction.Reset));
                                     RequestSelectionChanging?.Invoke(this, new(NotifyCollectionChangedAction.Add, sp));
                                 }
-                                //break;
+                                if (hit)
+                                {
+                                    break;
+                                }
                             }
 
                             // 如果点了空白的地方, 就清空选中列表
