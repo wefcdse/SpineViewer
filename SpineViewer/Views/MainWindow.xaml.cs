@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     public static readonly string LastStateFilePath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath), "laststate.json");
 
     private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+    public static Logger Logger => _logger;
 
     private ListViewItem? _listViewDragSourceItem = null;
     private Point _listViewDragSourcePoint;

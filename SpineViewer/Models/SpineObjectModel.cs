@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -445,26 +446,26 @@ namespace SpineViewer.Models
                 SpineObj.DrawSlot(Slot, target, states);
             }
         }
-        static RenderTexture tuse = null;
+        static RenderTexture? tHit = null;
         public bool TestHit(int x, int y, Vector2u size, SFML.Graphics.View view)
         {
             lock (_lock)
             {
-                uint test_hit_down = 4;
+                uint test_hit_down = 8;
                 Vector2u target_size = new Vector2u(size.X / test_hit_down, size.Y / test_hit_down);
-                if (tuse == null)
+                if (tHit == null)
                 {
-                    tuse = new SFML.Graphics.RenderTexture(target_size.X,target_size.Y);
+                    tHit = new SFML.Graphics.RenderTexture(target_size.X,target_size.Y);
                 }
-                if (tuse.Size != target_size)
+                if (tHit.Size != target_size)
                 {
-                    var drop = tuse;
-                    tuse = new SFML.Graphics.RenderTexture(target_size.X, target_size.Y);
+                    var drop = tHit;
+                    tHit = new SFML.Graphics.RenderTexture(target_size.X, target_size.Y);
                     drop.Dispose();
                 }
-                tuse.Clear(SFML.Graphics.Color.Transparent);
+                tHit.Clear(SFML.Graphics.Color.Transparent);
 
-                SFML.Graphics.RenderTexture t = tuse;
+                SFML.Graphics.RenderTexture t = tHit;
                 t.SetView(view);
                 t.Draw(this._spineObject);
                 t.Display();
@@ -493,40 +494,52 @@ namespace SpineViewer.Models
                     img.Dispose();
                     return false;
                 }
-                uint resize = 8;
-
-                RenderTexture t1 = new RenderTexture(size.X / resize, size.Y / resize);
-                View v1 = new View(view);
-                t1.SetView(v1);
-                foreach (var slot in _spineObject.GetPrivateSkeleton().IterDrawOrder())
-                {
-                    if (slot.A <= 0 || !slot.Bone.Active || slot.Disabled)
-                    {
-                        continue;
-                    }
-
-                    t1.Clear(SFML.Graphics.Color.Transparent);
-                    var draw_slot = new DrawSlot(_spineObject, slot);
-                    t1.Draw(draw_slot);
-                    t1.Display();
-                    var img1 = t1.Texture.CopyToImage();
-                    //img1.SaveToFile(slot.Name + "bbbbbbb.png");
-                    var pix1 = img1.GetPixel((uint)x / resize, (uint)y / resize);
-                    if (pix1.A != 0)
-                    {
-                        Debug.Print(slot.Name);
-                    }
-                    img1.Dispose();
-
-                }
-                t1.Dispose();
-                t.Dispose();
-                img.Dispose();
-                v1.Dispose();
+               
             }
-            return true;
         }
 
+        static RenderTexture? tHitSlot = null;
+        public ISlot[] TesctSlotHit(int x, int y, Vector2u size,View view)
+        {
+            uint resize = 8;
+            Vector2u target_size = new(size.X / resize, size.Y / resize);
+            if (tHitSlot == null)
+            {
+                tHitSlot = new RenderTexture(target_size.X, target_size.Y);
+            }
+            if (tHitSlot.Size != target_size)
+            {
+                var drop = tHitSlot;
+                tHitSlot = new RenderTexture(target_size.X, target_size.Y);
+                drop.Dispose();
+            }
+            tHitSlot.Clear(SFML.Graphics.Color.Transparent);
+            ArrayList slots = [];
+            tHitSlot.SetView(view);
+            foreach (var slot in _spineObject.GetPrivateSkeleton().IterDrawOrder().Reverse())
+            {
+                if (slot.A <= 0 || !slot.Bone.Active || slot.Disabled)
+                {
+                    continue;
+                }
+
+                tHitSlot.Clear(SFML.Graphics.Color.Transparent);
+                var draw_slot = new DrawSlot(_spineObject, slot);
+                tHitSlot.Draw(draw_slot);
+                tHitSlot.Display();
+                var img1 = tHitSlot.Texture.CopyToImage();
+                //img1.SaveToFile(slot.Name + "bbbbbbb.png");
+                var pix1 = img1.GetPixel((uint)x / resize, (uint)y / resize);
+                img1.Dispose();
+
+                if (pix1.A != 0)
+                {
+                    slots.Add(slot);
+                }
+
+            }
+            return (ISlot[])slots.ToArray(typeof(ISlot));
+        }
         public SpineObjectConfigModel ObjectConfig
         {
             get

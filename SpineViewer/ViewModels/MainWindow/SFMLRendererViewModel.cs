@@ -379,7 +379,7 @@ namespace SpineViewer.ViewModels.MainWindow
                                 var getSize = new GetSize();
                                 this._renderer.Draw(getSize);
                                 Debug.Print("window size: " + getSize.Size);
-                                var hit = sp.TestHit(e.X, e.Y, getSize.Size,_renderer.GetView());
+                                var hit = sp.TestHit(e.X, e.Y, getSize.Size, _renderer.GetView());
                                 hitany = hit || hitany;
                                 // 如果点到了没被选中的东西, 则清空原先选中的, 改为只选中这一次点的
                                 if (!sp.IsSelected && hit)
@@ -389,6 +389,21 @@ namespace SpineViewer.ViewModels.MainWindow
                                 }
                                 if (hit)
                                 {
+                                    var slots = sp.TesctSlotHit(e.X, e.Y, getSize.Size, _renderer.GetView());
+                                    if (slots.Length > 0)
+                                    {
+                                        var info = "hit slot: [";
+                                        var sep = "";
+                                        foreach (var slot in slots)
+                                        {
+                                            info += sep;
+                                            info += slot.Name;
+                                            sep = ", ";
+                                        }
+                                        info += "]";
+                                        Views.MainWindow.Logger.Info(info);
+                                    }
+
                                     break;
                                 }
                             }
