@@ -369,29 +369,29 @@ namespace SpineViewer.ViewModels.MainWindow
                         if ((Keyboard.Modifiers & ModifierKeys.Control) == 0)
                         {
                             // 没按 Ctrl 的情况下, 如果命中了已选中对象, 则就算普通命中
-                            bool hit = false;
-                            foreach (var sp in _models)
+                            bool hitany = false;
+                            foreach (var sp in _models.Reverse())
                             {
                                 if (!sp.IsShown) continue;
                                 if (!sp.GetCurrentBounds().Contains(src)) continue;
 
-                                hit = true;
 
                                 var getSize = new GetSize();
                                 this._renderer.Draw(getSize);
                                 Debug.Print("window size: " + getSize.Size);
-                                sp.TestHit(e.X, e.Y, getSize.Size,_renderer.GetView());
+                                var hit = sp.TestHit(e.X, e.Y, getSize.Size,_renderer.GetView());
+                                hitany = hit || hitany;
                                 // 如果点到了没被选中的东西, 则清空原先选中的, 改为只选中这一次点的
-                                if (!sp.IsSelected)
+                                if (!sp.IsSelected && hit)
                                 {
                                     RequestSelectionChanging?.Invoke(this, new(NotifyCollectionChangedAction.Reset));
                                     RequestSelectionChanging?.Invoke(this, new(NotifyCollectionChangedAction.Add, sp));
                                 }
-                                break;
+                                //break;
                             }
 
                             // 如果点了空白的地方, 就清空选中列表
-                            if (!hit) RequestSelectionChanging?.Invoke(this, new(NotifyCollectionChangedAction.Reset));
+                            if (!hitany) RequestSelectionChanging?.Invoke(this, new(NotifyCollectionChangedAction.Reset));
                         }
                         else
                         {

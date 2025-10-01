@@ -445,7 +445,7 @@ namespace SpineViewer.Models
                 SpineObj.DrawSlot(Slot, target, states);
             }
         }
-        public void TestHit(int x, int y, Vector2u size, SFML.Graphics.View view)
+        public bool TestHit(int x, int y, Vector2u size, SFML.Graphics.View view)
         {
             lock (_lock)
             {
@@ -471,7 +471,7 @@ namespace SpineViewer.Models
                 }
                 else
                 {
-                    return;
+                    return false;
                 }
                 uint resize = 8;
 
@@ -504,6 +504,7 @@ namespace SpineViewer.Models
                 img.Dispose();
                 v1.Dispose();
             }
+            return true;
         }
 
         public SpineObjectConfigModel ObjectConfig
