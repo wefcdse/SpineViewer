@@ -449,7 +449,8 @@ namespace SpineViewer.Models
         {
             lock (_lock)
             {
-                SFML.Graphics.RenderTexture t = new SFML.Graphics.RenderTexture(size.X, size.Y);
+                uint test_hit_down = 4;
+                SFML.Graphics.RenderTexture t = new SFML.Graphics.RenderTexture(size.X / test_hit_down, size.Y / test_hit_down);
                 t.SetView(view);
                 t.Draw(this._spineObject);
                 t.Display();
@@ -464,7 +465,7 @@ namespace SpineViewer.Models
                 //var imgZ = tZ.Texture.CopyToImage();
                 //imgZ.SaveToFile("aaaaaz.png");
 
-                var pix = img.GetPixel((uint)x, (uint)y);
+                var pix = img.GetPixel((uint)x / test_hit_down, (uint)y / test_hit_down);
                 if (pix.A != 0)
                 {
                     Debug.Print(this.Name);
