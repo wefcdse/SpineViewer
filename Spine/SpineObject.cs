@@ -4,6 +4,7 @@ using Spine.Interfaces;
 using Spine.Interfaces.Attachments;
 using Spine.Utils;
 using System;
+using System.Collections;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +16,41 @@ namespace Spine
 {
     public class SpineObject : SFML.Graphics.Drawable, IDisposable
     {
+        class BuffLine
+        {
+            public SpineObjectData data;
+            public ulong refs;
+            public SpineVersion version;
+           public BuffLine(SpineObjectData data, SpineVersion version, ulong refs)
+            {
+                this.data = data;
+                this.version = version;
+                this.refs = refs;
+            }
+        }
+        static Dictionary<(string,string),BuffLine> SpineObjectBuffer = new();
+        private static void IncBuffuse((string, string) key)
+        {
+            if (SpineObjectBuffer.ContainsKey(key))
+            {
+                SpineObjectBuffer[key].refs += 1;
+            }
+        }
+        private static void DecBuffuse((string, string) key)
+        {
+            if (SpineObjectBuffer.ContainsKey(key))
+            {
+                SpineObjectBuffer[key].refs -= 1;
+            }
+        }
+        private static ulong Buffuse((string, string) key)
+        {
+            if (SpineObjectBuffer.ContainsKey(key))
+            {
+                return SpineObjectBuffer[key].refs;
+            }
+            return 0;
+        }
         /// <summary>
         /// 可能的 skel 和 atlas 文件后缀, key 是 skel 后缀, value 是对应的可能的 atlas 后缀
         /// </summary>
@@ -73,66 +109,88 @@ namespace Spine
             else if (!File.Exists(atlasPath)) throw new FileNotFoundException($"{nameof(atlasPath)} not found", atlasPath);
             AtlasPath = Path.GetFullPath(atlasPath);
 
-            // 自动检测版本, 可能会抛出异常
-            if (version is null)
+            var key = (SkelPath, AtlasPath);
+            if (SpineObjectBuffer.ContainsKey(key))
             {
-                try
-                {
-                    version = SpineVersion.GetVersion(skelPath);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Trace(ex.ToString());
-                    _logger.Warn("Failed to detect version for skel {0}, try all available versions", skelPath);
-                }
-            }
+                var buffed = SpineObjectBuffer[key];
+                IncBuffuse(key);
+                // 拷贝基本信息
+                Version = buffed.version;
 
-            if (version is null)
-            {
-                // 从高版本向低版本逐一尝试
-                foreach (var v in SpineVersion.RegisteredVersions.OrderDescending())
-                {
-                    try
-                    {
-                        _data = SpineObjectData.New(v, skelPath, atlasPath, textureLoader);
-                        Version = v;
-                        break;
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                }
+                // 拷贝数据并且增加引用计数
+                _data = buffed.data;
+                _data.IncRef();
 
-                // 依然加载不成功就只能报错
-                if (_data is null || Version is null)
-                    throw new InvalidDataException($"Failed to load spine by existed versions");
+                // 新的实例
+                _skeleton = _data.CreateSkeleton();
+                _animationState = _data.CreateAnimationState();
+                _clipping = _data.CreateSkeletonClipping();
             }
             else
             {
-                // 根据版本实例化对象
-                Version = version;
-                try
+                // 自动检测版本, 可能会抛出异常
+                if (version is null)
                 {
-                    _data = SpineObjectData.New(Version, skelPath, atlasPath, textureLoader);
+                    try
+                    {
+                        version = SpineVersion.GetVersion(skelPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Trace(ex.ToString());
+                        _logger.Warn("Failed to detect version for skel {0}, try all available versions", skelPath);
+                    }
                 }
-                catch (Exception ex)
+
+                if (version is null)
                 {
-                    _logger.Trace(ex.ToString());
-                    throw new InvalidDataException($"Failed to load spine with version '{version}'");
+                    // 从高版本向低版本逐一尝试
+                    foreach (var v in SpineVersion.RegisteredVersions.OrderDescending())
+                    {
+                        try
+                        {
+                            _data = SpineObjectData.New(v, skelPath, atlasPath, textureLoader);
+                            Version = v;
+                            break;
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                    }
+
+                    // 依然加载不成功就只能报错
+                    if (_data is null || Version is null)
+                        throw new InvalidDataException($"Failed to load spine by existed versions");
                 }
+                else
+                {
+                    // 根据版本实例化对象
+                    Version = version;
+                    try
+                    {
+                        _data = SpineObjectData.New(Version, skelPath, atlasPath, textureLoader);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Trace(ex.ToString());
+                        throw new InvalidDataException($"Failed to load spine with version '{version}'");
+                    }
+                }
+
+                // 创建状态实例
+                _skeleton = _data.CreateSkeleton();
+                _animationState = _data.CreateAnimationState();
+                _clipping = _data.CreateSkeletonClipping();
             }
-
-            // 创建状态实例
-            _skeleton = _data.CreateSkeleton();
-            _animationState = _data.CreateAnimationState();
-            _clipping = _data.CreateSkeletonClipping();
-
             // 挂载一个空皮肤
             _skeleton.Skin = _data.CreateSkin(Guid.NewGuid().ToString());
 
             // 初始化皮肤加载情况, 不需要记录 default 的值
             _skinLoadStatus = _data.Skins.Select(it => it.Name).Where(it => it != "default").ToDictionary(it => it, it => false);
+
+            if (!SpineObjectBuffer.ContainsKey(key))
+                SpineObjectBuffer.Add(key, new BuffLine(_data, Version, 1));
 
             // 必须更新一次, 否则部分内部参数还未生成
             Update(0);
@@ -207,7 +265,7 @@ namespace Spine
             // 必须更新一次, 否则部分内部参数还未生成
             Update(0);
         }
-
+     
         /// <summary>
         /// 数据对象
         /// </summary>
@@ -854,6 +912,12 @@ namespace Spine
             if (disposing)
             {
                 _data.Dispose();
+                var key = (SkelPath, AtlasPath);
+                DecBuffuse(key);
+                if (Buffuse(key) == 0)
+                {
+                    SpineObjectBuffer.Remove(key);
+                }
             }
             _disposed = true;
         }
